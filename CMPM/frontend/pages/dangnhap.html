@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Đăng nhập</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      padding: 40px 20px;
+      margin: 0;
+    }
+
+    .boxtitle {
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .form-box {
+      background-color: #fff;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 25px;
+      max-width: 400px;
+      width: 100%;
+      margin: 0 auto;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .row {
+      margin-bottom: 15px;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 6px;
+      color: #333;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    input[type="submit"] {
+      width: 100%;
+      padding: 12px;
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    input[type="submit"]:hover {
+      background-color: #45a049;
+    }
+
+    .error-message {
+      color: red;
+      font-size: 13px;
+      margin-top: 5px;
+    }
+
+    li {
+      list-style: none;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    li a {
+      color: #007BFF;
+      text-decoration: none;
+    }
+
+    li a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 20px 10px;
+      }
+
+      .boxtitle {
+        font-size: 20px;
+      }
+
+      .form-box {
+        padding: 20px;
+      }
+
+      input[type="submit"] {
+        font-size: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <form action="#" method="post" id="form-dangnhap" class="form-box">
+    <div class="boxtitle">Tài khoản</div>
+
+    <div class="row">
+      <label for="hoten">Tên đăng nhập</label>
+      <input type="text" name="hoten" id="hoten">
+    </div>
+
+    <div class="row">
+      <label for="mk">Mật khẩu</label>
+      <input type="password" name="mk" id="mk">
+    </div>
+
+    <div class="row">
+      <input type="checkbox" id="remember"> <label for="remember">Ghi nhớ tài khoản?</label>
+    </div>
+
+    <div class="row">
+      <input type="submit" value="Đăng nhập">
+    </div>
+
+    <li><a href="#">Quên mật khẩu?</a></li>
+    <li><a href="dangky.html">Đăng ký tài khoản</a></li>
+  </form>
+
+  <script>
+    document.getElementById('form-dangnhap').onsubmit = function(event) {
+      event.preventDefault();
+
+      const tenDangNhap = document.getElementById('hoten');
+      const matKhau = document.getElementById('mk');
+
+      const errorMessages = document.querySelectorAll('.error-message');
+      errorMessages.forEach(msg => msg.remove());
+
+      let isValid = true;
+
+      if (tenDangNhap.value.trim() === "") {
+        const errorMessage = document.createElement('div');
+        errorMessage.textContent = "Tên đăng nhập không được để trống.";
+        errorMessage.classList.add('error-message');
+        tenDangNhap.parentNode.appendChild(errorMessage);
+        isValid = false;
+      }
+
+      if (matKhau.value.trim() === "") {
+        const errorMessage = document.createElement('div');
+        errorMessage.textContent = "Mật khẩu không được để trống.";
+        errorMessage.classList.add('error-message');
+        matKhau.parentNode.appendChild(errorMessage);
+        isValid = false;
+      }
+
+      if (!isValid) return;
+
+      fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: tenDangNhap.value.trim(),
+          password: matKhau.value.trim()
+        })
+      })
+      .then(async res => {
+        const data = await res.json();
+        if (res.ok) {
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("isLoggedIn", "true");
+          localStorage.setItem("role", data.role);
+          window.location.href = "trangchu.html";
+        } else {
+          const errorMessage = document.createElement('div');
+          errorMessage.textContent = data.message || "Sai tài khoản hoặc mật khẩu!";
+          errorMessage.classList.add('error-message');
+          matKhau.parentNode.appendChild(errorMessage);
+        }
+      })
+      .catch(err => {
+        console.error("Lỗi khi đăng nhập:", err);
+        const errorMessage = document.createElement('div');
+        errorMessage.textContent = "Lỗi máy chủ. Vui lòng thử lại sau.";
+        errorMessage.classList.add('error-message');
+        matKhau.parentNode.appendChild(errorMessage);
+      });
+    };
+  </script>
+</body>
+</html>
