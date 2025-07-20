@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Trả Sách</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f2f5;
+      padding: 20px;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px #ccc;
+      position: relative;
+    }
+    .home-icon {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 24px;
+    }
+    .home-icon a {
+      text-decoration: none;
+      color: #333;
+    }
+    .home-icon a:hover {
+      color: #3498db;
+    }
+    h1, h2 {
+      text-align: center;
+      color: #333;
+    }
+    form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+    .form-group label {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .form-group input,
+    .form-group select {
+      padding: 6px;
+      font-size: 14px;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+    }
+    button {
+      grid-column: span 2;
+      padding: 10px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    table, th, td {
+      border: 1px solid #aaa;
+    }
+    th, td {
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background-color: #f4f4f4;
+    }
+    .action-btns button {
+      margin: 0 5px;
+      padding: 5px 10px;
+      font-size: 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .edit-btn {
+      background-color: #ffc107;
+      color: white;
+    }
+    .delete-btn {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #333;
+      color: white;
+      padding: 15px 25px;
+      border-radius: 6px;
+      font-size: 16px;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.5s ease, bottom 0.5s ease;
+      z-index: 10000;
+    }
+    .toast.show {
+      opacity: 1;
+      visibility: visible;
+      bottom: 50px;
+    }
+    .toast.success { background-color: #28a745; }
+    .toast.error { background-color: #dc3545; }
+    .toast.warning { background-color: #ffc107; color: #333; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="home-icon">
+    <a href="trangchu.html" title="Về trang chủ"><i class="fas fa-home"></i></a>
+  </div>
+  <h1>Phiếu Trả Sách</h1>
+
+  <form id="return-form">
+    <div class="form-group">
+      <label for="matra">Mã trả:</label>
+      <input type="text" id="matra" placeholder="VD: T01" required>
+    </div>
+    <div class="form-group">
+      <label for="madocgia">Mã độc giả:</label>
+      <input type="text" id="madocgia" placeholder="VD: DG01" required>
+    </div>
+    <div class="form-group">
+      <label for="tinhtrang">Tình trạng sách trả:</label>
+      <select id="tinhtrang" required>
+        <option value="">-- Chọn --</option>
+        <option value="Bình thường">Bình thường</option>
+        <option value="Bị hỏng">Bị hỏng</option>
+        <option value="Mất sách">Mất sách</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="maphat">Mã phạt:</label>
+      <input type="text" id="maphat" placeholder="VD: P001 hoặc để trống nếu không phạt">
+    </div>
+    <div class="form-group">
+      <label for="returnDate">Ngày trả:</label>
+      <input type="date" id="returnDate" required>
+    </div>
+    <button type="submit">Xác nhận trả sách</button>
+  </form>
+
+  <h2>Danh sách trả sách</h2>
+  <table id="return-table">
+    <thead>
+    <tr>
+      <th>Mã trả</th>
+      <th>Mã độc giả</th>
+      <th>Tình trạng</th>
+      <th>Mã phạt</th>
+      <th>Ngày trả</th>
+      <th>Hành động</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const form = document.getElementById("return-form");
+const tableBody = document.querySelector("#return-table tbody");
+let editingId = null;
+
+form.addEventListener("submit", async function (e) {
+  e.preventDefault();
+  const matra = document.getElementById("matra").value.trim();
+  const madocgia = document.getElementById("madocgia").value.trim();
+  const tinhtrang = document.getElementById("tinhtrang").value;
+  const maphat = document.getElementById("maphat").value.trim();
+  const returnDate = document.getElementById("returnDate").value;
+
+  if (!matra || !madocgia || !tinhtrang || !returnDate) {
+    showToast("Vui lòng nhập đầy đủ thông tin.", "warning");
+    return;
+  }
+
+  const data = { matra, madocgia, tinhtrang, maphat, returnDate };
+  const url = editingId ? `http://localhost:5000/api/returns/${editingId}` : "http://localhost:5000/api/returns/add";
+  const method = editingId ? "PUT" : "POST";
+
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    const result = await res.json();
+    if (res.ok) {
+      showToast(editingId ? "Đã cập nhật phiếu trả" : "Đã thêm phiếu trả", "success");
+      tableBody.innerHTML = "";
+      loadData();
+      form.reset();
+      editingId = null;
+    } else {
+      showToast(result.message || "Có lỗi xảy ra", "error");
+    }
+  } catch (err) {
+    showToast("Lỗi kết nối đến server", "error");
+  }
+});
+
+function themDong(item) {
+  const role = localStorage.getItem("role");
+  const isDocGia = role === "docgia";
+
+  const row = document.createElement("tr");
+  row.innerHTML = `
+    <td>${item.matra}</td>
+    <td>${item.madocgia}</td>
+    <td>${item.tinhtrang}</td>
+    <td>${item.maphat || "-"}</td>
+    <td>${new Date(item.returnDate).toLocaleDateString()}</td>
+    <td class="action-btns">
+      <button class="edit-btn" onclick='suaPhieu(${JSON.stringify(item)})'>Sửa</button>
+      ${!isDocGia ? `<button class="delete-btn" onclick="xoaPhieu('${item._id}')">Xóa</button>` : ""}
+    </td>
+  `;
+  tableBody.appendChild(row);
+}
+
+function suaPhieu(item) {
+  document.getElementById("matra").value = item.matra;
+  document.getElementById("madocgia").value = item.madocgia;
+  document.getElementById("tinhtrang").value = item.tinhtrang;
+  document.getElementById("maphat").value = item.maphat;
+  document.getElementById("returnDate").value = item.returnDate.split("T")[0];
+  editingId = item._id;
+}
+
+async function xoaPhieu(id) {
+  if (!confirm("Bạn có chắc chắn muốn xoá?")) return;
+  try {
+    const res = await fetch(`http://localhost:5000/api/returns/${id}`, { method: "DELETE" });
+    const result = await res.json();
+    if (res.ok) {
+      showToast("Đã xoá phiếu trả", "success");
+      tableBody.innerHTML = "";
+      loadData();
+    } else {
+      showToast(result.message || "Không thể xoá", "error");
+    }
+  } catch (err) {
+    showToast("Lỗi khi xoá phiếu", "error");
+  }
+}
+
+async function loadData() {
+  try {
+    const res = await fetch("http://localhost:5000/api/returns");
+    const data = await res.json();
+    data.forEach(item => themDong(item));
+  } catch (err) {
+    showToast("Không thể tải danh sách", "error");
+  }
+}
+
+function showToast(message, type = "success") {
+  const toast = document.getElementById("toast");
+  toast.textContent = message;
+  toast.className = `toast show ${type}`;
+
+  setTimeout(() => {
+    toast.className = "toast";
+  }, 3000);
+}
+
+window.onload = loadData;
+</script>
+
+</body>
+</html>
