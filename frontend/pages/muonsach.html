@@ -1,0 +1,344 @@
+<!-- borrow.html -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Phiếu Mượn Sách</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      padding: 20px;
+      position: relative;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px #ccc;
+      position: relative;
+    }
+
+    .home-icon {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 24px;
+    }
+
+    .home-icon a {
+      text-decoration: none;
+      color: #333;
+    }
+
+    .home-icon a:hover {
+      color: #28a745;
+    }
+
+    h1, h2 {
+      text-align: center;
+      color: #333;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group label {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .form-group input,
+    .form-group select {
+      padding: 6px;
+      font-size: 14px;
+      border: 1px solid #aaa;
+      border-radius: 4px;
+    }
+
+    button {
+      grid-column: span 2;
+      padding: 10px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #218838;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    table, th, td {
+      border: 1px solid #aaa;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #f0f0f0;
+    }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #333;
+      color: white;
+      padding: 15px 25px;
+      border-radius: 6px;
+      font-size: 16px;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.5s ease, bottom 0.5s ease;
+      z-index: 9999;
+    }
+    .toast.show {
+      opacity: 1;
+      visibility: visible;
+      bottom: 50px;
+    }
+    .toast.success { background-color: #28a745; }
+    .toast.error { background-color: #dc3545; }
+    .toast.warning { background-color: #ffc107; color: #333; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="home-icon">
+      <a href="trangchu.html" title="Về trang chủ"><i class="fas fa-home"></i></a>
+    </div>
+
+    <h1>Phiếu Mượn Sách</h1>
+
+    <form id="borrow-form">
+      <div class="form-group">
+        <label for="maphieu">Mã phiếu mượn:</label>
+        <input type="text" id="maphieu" placeholder="VD: M01" required />
+      </div>
+      
+      <div class="form-group">
+        <label for="madocgia">Mã độc giả:</label>
+        <input type="text" id="madocgia" placeholder="VD: DG01" required>
+      </div>
+
+      <div class="form-group">
+        <label for="masach">Mã sách:</label>
+        <input type="text" id="masach" placeholder="VD: S001" required>
+      </div>
+
+      <div class="form-group">
+        <label for="tiencoc">Tiền đặt cọc (VNĐ):</label>
+        <input type="number" id="tiencoc" placeholder="VD: 50000" required>
+      </div>
+
+      <div class="form-group">
+        <label for="borrowDate">Ngày mượn:</label>
+        <input type="date" id="borrowDate" required>
+      </div>
+
+      <div class="form-group">
+        <label for="returnDate">Ngày hẹn trả:</label>
+        <input type="date" id="returnDate" required>
+      </div>
+
+      <button type="submit">Thêm phiếu mượn</button>
+    </form>
+
+    <h3 style="text-align: center;">Thống kê Phiếu Mượn</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Đang mượn</th>
+          <th>Đã trả sách</th>
+          <th>Quá hạn chưa trả</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td id="openCount">0</td>
+          <td id="closedCount">0</td>
+          <td id="overdueCount">0</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Danh sách phiếu mượn</h2>
+    <table id="borrow-table">
+      <thead>
+        <tr>
+          <th>Mã phiếu</th>
+          <th>Mã độc giả</th>
+          <th>Mã sách</th>
+          <th>Tiền đặt cọc</th>
+          <th>Ngày mượn</th>
+          <th>Ngày hẹn trả</th>
+          <th>Thao tác</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+const form = document.getElementById("borrow-form");
+const table = document.getElementById("borrow-table").getElementsByTagName("tbody")[0];
+
+form.addEventListener("submit", async function (e) {
+  e.preventDefault();
+
+  const id = form.getAttribute("data-id");
+  const maphieu = document.getElementById("maphieu").value.trim();
+  const madocgia = document.getElementById("madocgia").value.trim();
+  const masach = document.getElementById("masach").value.trim();
+  const tiencoc = document.getElementById("tiencoc").value.trim();
+  const borrowDate = document.getElementById("borrowDate").value;
+  const returnDate = document.getElementById("returnDate").value;
+
+  if (!maphieu || !madocgia || !masach || !tiencoc || !borrowDate || !returnDate) {
+    showToast("Vui lòng nhập đầy đủ thông tin", "warning");
+    return;
+  }
+
+  if (new Date(returnDate) < new Date(borrowDate)) {
+    showToast("Ngày hẹn trả phải sau hoặc bằng ngày mượn", "warning");
+    return;
+  }
+
+  const data = { maphieu, madocgia, masach, tiencoc: parseInt(tiencoc), borrowDate, returnDate };
+
+  try {
+    const url = id ? `http://localhost:5000/api/borrows/${id}` : "http://localhost:5000/api/borrows/add";
+    const method = id ? "PUT" : "POST";
+
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+
+    const result = await res.json();
+    if (res.ok) {
+      table.innerHTML = "";
+      taiDanhSachPhieuMuon();
+      taiThongKePhieuMuon();
+      form.reset();
+      form.removeAttribute("data-id");
+      showToast(id ? "Cập nhật thành công" : "Thêm phiếu mượn thành công", "success");
+    } else {
+      showToast(result.message || "Lỗi xử lý phiếu mượn", "error");
+    }
+  } catch (err) {
+    showToast("Không thể kết nối đến máy chủ", "error");
+  }
+});
+
+function themDongVaoBang(item) {
+  const role = localStorage.getItem("role");
+  const isDocGia = role === "docgia";
+
+  const row = table.insertRow();
+  row.innerHTML = `
+    <td>${item.maphieu}</td>
+    <td>${item.madocgia}</td>
+    <td>${item.masach}</td>
+    <td>${item.tiencoc.toLocaleString()} VNĐ</td>
+    <td>${new Date(item.borrowDate).toLocaleDateString()}</td>
+    <td>${new Date(item.returnDate).toLocaleDateString()}</td>
+    <td>
+      <button onclick='suaPhieu(${JSON.stringify(item)})'>Sửa</button>
+      ${!isDocGia ? `<button onclick='xoaPhieu("${item._id}")' style="background:#dc3545;color:white;margin-left:5px;">Xóa</button>` : ""}
+    </td>
+  `;
+}
+
+function suaPhieu(item) {
+  document.getElementById("maphieu").value = item.maphieu;
+  document.getElementById("madocgia").value = item.madocgia;
+  document.getElementById("masach").value = item.masach;
+  document.getElementById("tiencoc").value = item.tiencoc;
+  document.getElementById("borrowDate").value = item.borrowDate.substring(0, 10);
+  document.getElementById("returnDate").value = item.returnDate.substring(0, 10);
+  form.setAttribute("data-id", item._id);
+}
+
+async function xoaPhieu(id) {
+  if (!confirm("Bạn có chắc muốn xóa phiếu mượn này không?")) return;
+  try {
+    const res = await fetch(`http://localhost:5000/api/borrows/${id}`, { method: "DELETE" });
+    const result = await res.json();
+    if (res.ok) {
+      table.innerHTML = "";
+      taiDanhSachPhieuMuon();
+      taiThongKePhieuMuon();
+      showToast("Xóa phiếu mượn thành công", "success");
+    } else {
+      showToast(result.message || "Không thể xóa phiếu mượn", "error");
+    }
+  } catch (err) {
+    showToast("Lỗi khi xóa phiếu mượn", "error");
+  }
+}
+
+async function taiDanhSachPhieuMuon() {
+  try {
+    const res = await fetch("http://localhost:5000/api/borrows");
+    const data = await res.json();
+    data.forEach(item => themDongVaoBang(item));
+  } catch (err) {
+    showToast("Không thể tải danh sách phiếu mượn", "error");
+  }
+}
+
+async function taiThongKePhieuMuon() {
+  try {
+    const res = await fetch("http://localhost:5000/api/borrows/stats");
+    const data = await res.json();
+    document.getElementById("openCount").textContent = data.open;
+    document.getElementById("closedCount").textContent = data.closed;
+    document.getElementById("overdueCount").textContent = data.overdue;
+  } catch (err) {
+    showToast("Không thể tải thống kê phiếu mượn", "error");
+  }
+}
+
+function showToast(message, type = "success") {
+  const toast = document.getElementById("toast");
+  toast.textContent = message;
+  toast.className = `toast show ${type}`;
+  setTimeout(() => { toast.className = "toast"; }, 3000);
+}
+
+window.onload = () => {
+  taiDanhSachPhieuMuon();
+  taiThongKePhieuMuon();
+};
+</script>
+</body>
+</html>

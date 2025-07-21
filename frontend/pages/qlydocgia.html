@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quản lý Độc giả</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f8f9fa;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      position: relative;
+    }
+
+    .home-icon {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 24px;
+    }
+
+    .home-icon a {
+      text-decoration: none;
+      color: #333;
+    }
+
+    .home-icon a:hover {
+      color: #3498db;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+
+    .form-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      flex: 1 0 120px;
+      margin-top: 10px;
+    }
+
+    .form-group input,
+    .form-group select {
+      flex: 2 0 300px;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    .button-group {
+      text-align: center;
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .button-group button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      background-color: #3498db;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      flex: 1 0 120px;
+      max-width: 200px;
+    }
+
+    .button-group button:hover {
+      background-color: #2980b9;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      overflow-x: auto;
+    }
+
+    table th, table td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+    }
+
+    table th {
+      background-color: #2c3e50;
+      color: white;
+    }
+
+    table tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+
+    table tr:hover {
+      background-color: #e0f7fa;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .form-group {
+        flex-direction: column;
+      }
+
+      .form-group label,
+      .form-group input,
+      .form-group select {
+        width: 100%;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+
+      .button-group button {
+        width: 100%;
+        max-width: none;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="home-icon">
+      <a href="trangchu.html" title="Về trang chủ"><i class="fas fa-home"></i></a>
+    </div>
+
+    <h2>Quản lý Độc giả</h2>
+
+    <div class="form-group">
+      <label for="madocgia">Mã độc giả:</label>
+      <input type="text" id="madocgia" placeholder="VD: DG01" />
+
+      <label for="hoten">Họ tên:</label>
+      <input type="text" id="hoten" placeholder="VD: Nguyễn Văn A" />
+
+      <label for="ngaysinh">Ngày sinh:</label>
+      <input type="date" id="ngaysinh" />
+
+      <label for="gioitinh">Giới tính:</label>
+      <select id="gioitinh">
+        <option value="">--Chọn--</option>
+        <option value="Nam">Nam</option>
+        <option value="Nữ">Nữ</option>
+      </select>
+
+      <label for="diachi">Địa chỉ:</label>
+      <input type="text" id="diachi" placeholder="VD: 123 Lê Lợi, Q1" />
+
+      <label for="sdt">SĐT:</label>
+      <input type="text" id="sdt" placeholder="VD: 0901234567" />
+
+      <div style="display: flex; align-items: center; margin-top: 10px;">
+        <label for="email" style="flex: 1 0 150px;">Email:</label>
+        <input type="email" id="email" placeholder="VD: example@gmail.com" style="flex: 2 0 320px;" />
+      </div>
+    </div>
+
+    <div class="button-group">
+      <button onclick="themDocGia()">Thêm</button>
+      <button onclick="suaDocGia()">Sửa</button>
+      <button onclick="xoaDocGia()">Xóa</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Mã độc giả</th>
+          <th>Họ tên</th>
+          <th>Ngày sinh</th>
+          <th>Giới tính</th>
+          <th>Địa chỉ</th>
+          <th>SĐT</th>
+          <th>Email</th>
+        </tr>
+      </thead>
+      <tbody id="docgia-table"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const tableBody = document.getElementById('docgia-table');
+    let selectedRow = null;
+
+    function layDuLieuForm() {
+      return {
+        madocgia: document.getElementById('madocgia').value.trim(),
+        hoten: document.getElementById('hoten').value.trim(),
+        ngaysinh: document.getElementById('ngaysinh').value,
+        gioitinh: document.getElementById('gioitinh').value,
+        diachi: document.getElementById('diachi').value.trim(),
+        sdt: document.getElementById('sdt').value.trim(),
+        email: document.getElementById('email').value.trim()
+      };
+    }
+
+    function xoaTrangForm() {
+      document.getElementById('madocgia').value = '';
+      document.getElementById('hoten').value = '';
+      document.getElementById('ngaysinh').value = '';
+      document.getElementById('gioitinh').value = '';
+      document.getElementById('diachi').value = '';
+      document.getElementById('sdt').value = '';
+      document.getElementById('email').value = '';
+      selectedRow = null;
+    }
+
+    function themDocGia() {
+      const data = layDuLieuForm();
+      if (!data.madocgia || !data.hoten || !data.sdt || !data.email) {
+        alert("Vui lòng nhập đầy đủ Mã độc giả, Họ tên, SĐT và Email");
+        return;
+      }
+
+      fetch("http://localhost:5000/api/readers/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      })
+      .then(res => res.json())
+      .then(result => {
+        if (result.success) {
+          alert("Thêm thành công!");
+          taiDanhSachDocGia();
+          xoaTrangForm();
+        } else {
+          alert("Lỗi thêm độc giả");
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Lỗi kết nối đến server");
+      });
+    }
+
+    function taiDanhSachDocGia() {
+      tableBody.innerHTML = "";
+
+      fetch("http://localhost:5000/api/readers")
+        .then(res => res.json())
+        .then(data => {
+          data.forEach(docgia => {
+            const row = tableBody.insertRow();
+            row.insertCell().textContent = docgia.madocgia;
+            row.insertCell().textContent = docgia.hoten;
+            row.insertCell().textContent = docgia.ngaysinh?.substring(0, 10) || '';
+            row.insertCell().textContent = docgia.gioitinh;
+            row.insertCell().textContent = docgia.diachi;
+            row.insertCell().textContent = docgia.sdt;
+            row.insertCell().textContent = docgia.email;
+
+            row.onclick = function () {
+              selectedRow = row;
+              document.getElementById('madocgia').value = docgia.madocgia;
+              document.getElementById('hoten').value = docgia.hoten;
+              document.getElementById('ngaysinh').value = docgia.ngaysinh?.substring(0, 10) || '';
+              document.getElementById('gioitinh').value = docgia.gioitinh;
+              document.getElementById('diachi').value = docgia.diachi;
+              document.getElementById('sdt').value = docgia.sdt;
+              document.getElementById('email').value = docgia.email;
+            };
+          });
+        })
+        .catch(err => {
+          console.error(err);
+          alert("Không thể tải danh sách độc giả");
+        });
+    }
+
+    function suaDocGia() {
+  if (!selectedRow) {
+    alert("Vui lòng chọn một dòng để sửa");
+    return;
+  }
+
+  const data = layDuLieuForm();
+  const maDG = selectedRow.cells[0].textContent;
+
+  fetch(`http://localhost:5000/api/readers/${maDG}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(data)
+  })
+    .then(res => res.json())
+    .then(result => {
+      if (result.success) {
+        alert("Sửa thành công!");
+        taiDanhSachDocGia();
+        xoaTrangForm();
+      } else {
+        alert("Không tìm thấy độc giả để sửa");
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Không thể kết nối đến server.");
+    });
+}
+
+    function xoaDocGia() {
+  if (!selectedRow) {
+    alert("Vui lòng chọn một dòng để xóa");
+    return;
+  }
+
+  const maDG = selectedRow.cells[0].textContent;
+
+  if (confirm("Bạn có chắc chắn muốn xóa độc giả này?")) {
+    fetch(`http://localhost:5000/api/readers/${maDG}`, {
+      method: "DELETE"
+    })
+      .then(res => res.json())
+      .then(result => {
+        if (result.success) {
+          alert("Xóa thành công!");
+          taiDanhSachDocGia();
+          xoaTrangForm();
+        } else {
+          alert("Không tìm thấy độc giả để xoá");
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Không thể kết nối đến server.");
+      });
+  }
+}
+
+
+    window.onload = taiDanhSachDocGia;
+  </script>
+</body>
+</html>
